@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Spots</title>
+<meta name="theme-color" content="#14161c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root {
+    --bg: #14161c;
+    --pad: #232734;
+    --pad-hit: #f4b73f;
+    --pad-hit-ink: #14161c;
+    --ink: #e8eaf0;
+    --ink-dim: #8e94a6;
+    --line: #2e3344;
+    --accent: #f4b73f;
+    --gap: 10px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    font: 500 16px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    user-select: none; -webkit-user-select: none;
+  }
+
+  /* ---------- Board ---------- */
+  #board {
+    position: fixed; inset: 0;
+    padding: calc(env(safe-area-inset-top) + var(--gap)) calc(env(safe-area-inset-right) + var(--gap))
+             calc(env(safe-area-inset-bottom) + var(--gap)) calc(env(safe-area-inset-left) + var(--gap));
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 1fr;
+    gap: var(--gap);
+  }
+  /* Landscape: 3 across, 2 down — keeps pads chunky when the phone turns */
+  @media (orientation: landscape) {
+    #board { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .pad {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--pad);
+    color: var(--ink);
+    font: inherit;
+    font-size: clamp(15px, 4.2vmin, 30px);
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 8px 12px;
+    overflow: hidden;
+    word-break: break-word;
+    white-space: pre-line;
+    transition: transform 90ms ease-out, background-color 90ms ease-out, color 90ms ease-out;
+  }
+  .pad.hit {
+    background: var(--pad-hit);
+    color: var(--pad-hit-ink);
+    transform: scale(0.96);
+    transition-duration: 20ms;
+  }
+  .pad.empty { color: var(--ink-dim); font-weight: 500; font-size: 15px; border-style: dashed; background: transparent; }
+
+  /* ---------- Floating controls ---------- */
+  .fab {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom) + 14px);
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: rgba(20,22,28,.72);
+    backdrop-filter: blur(8px);
+    color: var(--ink-dim);
+    font-size: 19px; line-height: 1;
+    display: grid; place-items: center;
+    z-index: 20;
+  }
+  .fab:active { color: var(--accent); border-color: var(--accent); }
+  #gear  { right: calc(env(safe-area-inset-right) + 14px); }
+  #panic { left:  calc(env(safe-area-inset-left)  + 14px); }
+
+  /* ---------- Settings sheet ---------- */
+  #settings {
+    position: fixed; inset: 0; z-index: 30;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 240ms cubic-bezier(.2,.8,.2,1);
+  }
+  #settings.open { transform: none; }
+  .sheet-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: calc(env(safe-area-inset-top) + 14px) 16px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sheet-head h1 { margin: 0; font-size: 17px; font-weight: 650; }
+  .sheet-head .count { color: var(--ink-dim); font-size: 13px; font-weight: 500; }
+  .sheet-head .count.full { color: var(--accent); }
+  .sheet-head button {
+    margin-left: auto;
+    background: var(--accent); color: #14161c;
+    border: 0; border-radius: 10px;
+    padding: 9px 16px; font: 650 15px/1 system-ui, sans-serif;
+  }
+  .hint { padding: 12px 16px 4px; color: var(--ink-dim); font-size: 13px; font-weight: 500; }
+
+  #list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+          padding: 4px 12px calc(env(safe-area-inset-bottom) + 24px); }
+  .row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .slot {
+    flex: 0 0 34px; height: 34px; border-radius: 9px;
+    border: 1px solid var(--line); background: transparent;
+    color: var(--ink-dim); font: 650 14px/1 system-ui, sans-serif;
+    display: grid; place-items: center;
+  }
+  .row.on .slot { background: var(--accent); border-color: var(--accent); color: #14161c; }
+  .row input[type=text] {
+    flex: 1 1 auto; min-width: 0;
+    background: var(--pad); border: 1px solid var(--line); border-radius: 9px;
+    color: var(--ink); font: 500 15px/1 system-ui, sans-serif;
+    padding: 9px 10px;
+  }
+  .row input[type=text]:focus { outline: none; border-color: var(--accent); }
+  .row .prev {
+    flex: 0 0 34px; height: 34px; border-radius: 9px;
+    border: 1px solid var(--line); background: transparent;
+    color: var(--ink-dim); font-size: 14px;
+    display: grid; place-items: center;
+  }
+  .row .prev:active { color: var(--accent); }
+  .row.missing input[type=text] { color: var(--ink-dim); text-decoration: line-through; }
+  .row.missing .prev { opacity: .3; }
+
+  /* ---------- Splash ---------- */
+  #splash {
+    position: fixed; inset: 0; z-index: 40;
+    background: var(--bg); color: var(--ink-dim);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 32px; text-align: center;
+    font-size: 15px;
+  }
+  #splash.gone { display: none; }
+  #splash b { color: var(--ink); font-size: 17px; font-weight: 650; }
+  #bar { width: min(260px, 70vw); height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  #bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 140ms linear; }
+  #splash .err { color: #ff8e7a; max-width: 34em; font-size: 14px; }
+  #start {
+    background: var(--accent); color: #14161c; border: 0; border-radius: 12px;
+    padding: 14px 28px; font: 650 17px/1 system-ui, sans-serif;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="board"></div>
+<button id="panic" class="fab" aria-label="Stop all sounds">&#9632;</button>
+<button id="gear"  class="fab" aria-label="Settings">&#9881;</button>
+
+<div id="settings" aria-hidden="true">
+  <div class="sheet-head">
+    <h1>Choose pads</h1>
+    <span class="count" id="count"></span>
+    <button id="done">Done</button>
+  </div>
+  <p class="hint">Tap the square to put a sound on the board &mdash; the number shows its position. Tap a name to rename it.</p>
+  <div id="list"></div>
+</div>
+
+<div id="splash">
+  <b>Spots</b>
+  <div id="bar"><i></i></div>
+  <div id="status">Loading sounds&hellip;</div>
+  <button id="start">Tap to start</button>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const SLOTS = 6;                     // pads visible on the board at once
+  const LS_KEY = 'spots.config.v1';
+
+  const $ = s => document.querySelector(s);
+  const board = $('#board'), list = $('#list'), settings = $('#settings');
+  const splash = $('#splash'), bar = $('#bar i'), status = $('#status'), startBtn = $('#start');
+
+  let sounds = [];          // [{file, label}] from sounds/sounds.json
+  let buffers = [];         // decoded AudioBuffer per index (null if it failed to load)
+  let cfg = { active: [], labels: {} };
+  let ctx = null;
+  let master = null;
+  let live = new Set();     // currently-playing sources, so Stop-all can cut them
+
+  /* ---------------- config persistence ---------------- */
+
+  function loadCfg() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(LS_KEY));
+      if (raw && Array.isArray(raw.active)) {
+        cfg.active = [...new Set(raw.active)]
+          .filter(i => Number.isInteger(i) && i >= 0 && i < sounds.length)
+          .slice(0, SLOTS);
+        cfg.labels = (raw.labels && typeof raw.labels === 'object') ? raw.labels : {};
+        return;
+      }
+    } catch (_) { /* fall through to defaults */ }
+    cfg.active = sounds.slice(0, SLOTS).map((_, i) => i);
+    cfg.labels = {};
+  }
+  const saveCfg = () => localStorage.setItem(LS_KEY, JSON.stringify(cfg));
+  const labelOf = i => (cfg.labels[i] ?? sounds[i]?.label ?? `Pad ${i + 1}`);
+
+  /* ---------------- audio ---------------- */
+
+  function makeCtx() {
+    if (ctx) return ctx;
+    ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+    master = ctx.createGain();
+    master.connect(ctx.destination);
+    return ctx;
+  }
+
+  // iOS/Android suspend the context until a real gesture; nudge it on every tap.
+  function resume() {
+    if (ctx && ctx.state !== 'running') ctx.resume();
+  }
+
+  function play(i) {
+    const buf = buffers[i];
+    if (!buf) return;
+    resume();
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(master);
+    src.onended = () => live.delete(src);
+    live.add(src);
+    src.start();
+  }
+
+  function stopAll() {
+    live.forEach(s => { try { s.stop(); } catch (_) {} });
+    live.clear();
+  }
+
+  /* ---------------- board rendering ---------------- */
+
+  function renderBoard() {
+    board.innerHTML = '';
+    for (let slot = 0; slot < SLOTS; slot++) {
+      const i = cfg.active[slot];
+      const el = document.createElement('button');
+      el.className = 'pad';
+      if (i === undefined) {
+        el.classList.add('empty');
+        el.textContent = 'empty';
+      } else {
+        el.textContent = labelOf(i);
+        el.dataset.i = i;
+        if (!buffers[i]) { el.classList.add('empty'); el.textContent = labelOf(i) + '\n(missing)'; }
+      }
+      board.appendChild(el);
+    }
+  }
+
+  // pointerdown, not click: fires on finger-down with no 300ms tap resolution delay
+  board.addEventListener('pointerdown', e => {
+    const pad = e.target.closest('.pad');
+    if (!pad || pad.dataset.i === undefined) return;
+    const i = +pad.dataset.i;
+    if (!buffers[i]) return;                 // missing file — don't flash a pad that makes no sound
+    play(i);
+    pad.classList.add('hit');
+    if (navigator.vibrate) navigator.vibrate(12);
+  });
+  // Clear every lit pad, not just the one under the finger — a finger that slides
+  // off its pad before lifting would otherwise leave it stuck highlighted.
+  const unhit = () => board.querySelectorAll('.pad.hit').forEach(p => p.classList.remove('hit'));
+  board.addEventListener('pointerup', unhit);
+  board.addEventListener('pointercancel', unhit);
+  board.addEventListener('pointerleave', unhit);
+  // Suppress the long-press context menu so holding a pad doesn't pop a menu
+  board.addEventListener('contextmenu', e => e.preventDefault());
+
+  /* ---------------- settings sheet ---------------- */
+
+  function renderCount() {
+    const c = $('#count');
+    c.textContent = `${cfg.active.length} / ${SLOTS}`;
+    c.classList.toggle('full', cfg.active.length >= SLOTS);
+  }
+
+  function renderList() {
+    list.innerHTML = '';
+    sounds.forEach((s, i) => {
+      const pos = cfg.active.indexOf(i);
+      const row = document.createElement('div');
+      row.className = 'row' + (pos > -1 ? ' on' : '') + (buffers[i] ? '' : ' missing');
+
+      const slot = document.createElement('button');
+      slot.className = 'slot';
+      slot.textContent = pos > -1 ? pos + 1 : '';
+      slot.setAttribute('aria-label', pos > -1 ? `Remove ${labelOf(i)} from board` : `Add ${labelOf(i)} to board`);
+      slot.addEventListener('click', () => toggle(i));
+
+      const name = document.createElement('input');
+      name.type = 'text';
+      name.value = labelOf(i);
+      name.setAttribute('aria-label', `Name for ${s.file}`);
+      name.addEventListener('change', () => {
+        const v = name.value.trim();
+        if (v) cfg.labels[i] = v; else { delete cfg.labels[i]; name.value = labelOf(i); }
+        saveCfg(); renderBoard(); renderList();
+      });
+
+      const prev = document.createElement('button');
+      prev.className = 'prev';
+      prev.textContent = '▶';
+      prev.setAttribute('aria-label', `Preview ${labelOf(i)}`);
+      prev.addEventListener('click', () => play(i));
+
+      row.append(slot, name, prev);
+      list.appendChild(row);
+    });
+    renderCount();
+  }
+
+  function toggle(i) {
+    const at = cfg.active.indexOf(i);
+    if (at > -1) {
+      cfg.active.splice(at, 1);                 // removing shifts everything after it up a slot
+    } else if (cfg.active.length < SLOTS) {
+      cfg.active.push(i);
+    } else {
+      // Board is full: drop the oldest pick so a tap always does something visible
+      cfg.active.shift();
+      cfg.active.push(i);
+    }
+    saveCfg(); renderBoard(); renderList();
+  }
+
+  $('#gear').addEventListener('click', () => {
+    renderList();
+    settings.classList.add('open');
+    settings.setAttribute('aria-hidden', 'false');
+  });
+  $('#done').addEventListener('click', () => {
+    settings.classList.remove('open');
+    settings.setAttribute('aria-hidden', 'true');
+  });
+  $('#panic').addEventListener('click', stopAll);
+
+  /* ---------------- keep the screen awake ---------------- */
+
+  let lock = null;
+  async function wake() {
+    if (!('wakeLock' in navigator) || lock) return;
+    try {
+      lock = await navigator.wakeLock.request('screen');
+      lock.addEventListener('release', () => { lock = null; });
+    } catch (_) { /* denied or unsupported — harmless */ }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { wake(); resume(); }
+  });
+
+  /* ---------------- boot ---------------- */
+
+  async function boot() {
+    let manifest;
+    try {
+      const r = await fetch('sounds/sounds.json', { cache: 'no-cache' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      manifest = await r.json();
+      if (!Array.isArray(manifest) || !manifest.length) throw new Error('sounds.json is empty');
+    } catch (err) {
+      status.innerHTML = `<span class="err">Could not read <b>sounds/sounds.json</b> &mdash; ${err.message}.`
+        + `<br><br>Note this needs to be served over http, not opened as a file:// path.</span>`;
+      return;
+    }
+
+    sounds = manifest.map((s, i) => ({
+      file: String(s.file ?? ''),
+      label: String(s.label ?? `Pad ${i + 1}`)
+    }));
+    loadCfg();
+    renderBoard();
+
+    makeCtx();
+
+    // Decode everything up front so a tap is pure playback — no fetch, no decode, no lag.
+    let done = 0, failed = [];
+    await Promise.all(sounds.map(async (s, i) => {
+      try {
+        const r = await fetch('sounds/' + s.file);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        buffers[i] = await ctx.decodeAudioData(await r.arrayBuffer());
+      } catch (_) {
+        buffers[i] = null;
+        failed.push(s.file);
+      }
+      bar.style.width = (++done / sounds.length * 100) + '%';
+    }));
+
+    renderBoard();
+
+    if (failed.length === sounds.length) {
+      status.innerHTML = `<span class="err">None of the ${sounds.length} audio files could be loaded.`
+        + `<br>Check the filenames in sounds/sounds.json.</span>`;
+      return;
+    }
+    status.textContent = failed.length
+      ? `${failed.length} file${failed.length > 1 ? 's' : ''} failed to load — those pads are greyed out.`
+      : '';
+
+    // AudioContext starts suspended without a gesture; one deliberate tap unlocks it.
+    startBtn.style.display = 'block';
+    startBtn.addEventListener('click', async () => {
+      await ctx.resume();
+      splash.classList.add('gone');
+      wake();
+    }, { once: true });
+  }
+
+  boot();
+
+  if ('serviceWorker' in navigator) {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+})();
+</script>
+</body>
+</html>
