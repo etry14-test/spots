@@ -1,6 +1,6 @@
 /* Spots service worker — makes the board work with no network after first load.
    Bump CACHE whenever you change index.html, so phones pick the new version up. */
-const CACHE = 'spots-v2';
+const CACHE = 'spots-v3';
 
 const SHELL = [
   '.',

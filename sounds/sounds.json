@@ -1,90 +1,28 @@
 [
-  {
-    "file": "01.mp3",
-    "label": "Pad 1"
-  },
-  {
-    "file": "02.mp3",
-    "label": "Pad 2"
-  },
-  {
-    "file": "03.mp3",
-    "label": "Pad 3"
-  },
-  {
-    "file": "04.mp3",
-    "label": "Pad 4"
-  },
-  {
-    "file": "05.mp3",
-    "label": "Pad 5"
-  },
-  {
-    "file": "06.mp3",
-    "label": "Pad 6"
-  },
-  {
-    "file": "07.mp3",
-    "label": "Pad 7"
-  },
-  {
-    "file": "08.mp3",
-    "label": "Pad 8"
-  },
-  {
-    "file": "09.mp3",
-    "label": "Pad 9"
-  },
-  {
-    "file": "10.mp3",
-    "label": "Pad 10"
-  },
-  {
-    "file": "11.mp3",
-    "label": "Pad 11"
-  },
-  {
-    "file": "12.mp3",
-    "label": "Pad 12"
-  },
-  {
-    "file": "13.mp3",
-    "label": "Pad 13"
-  },
-  {
-    "file": "14.mp3",
-    "label": "Pad 14"
-  },
-  {
-    "file": "15.mp3",
-    "label": "Pad 15"
-  },
-  {
-    "file": "16.mp3",
-    "label": "Pad 16"
-  },
-  {
-    "file": "17.mp3",
-    "label": "Pad 17"
-  },
-  {
-    "file": "18.mp3",
-    "label": "Pad 18"
-  },
-  {
-    "file": "19.mp3",
-    "label": "Pad 19"
-  },
-  {
-    "file": "20.mp3",
-    "label": "Pad 20"
-  },
-  {
-    "file": "21.mp3",
-    "label": "Pad 21"
-  },
-  {
-    "file": "22.mp3",
-    "label": "Pad 22"
-  }
+  { "file": "01.mp3", "label": "HOWL",      "color": "red"    },
+  { "file": "02.mp3", "label": "ROLL OVER", "color": "red"    },
+
+  { "file": "03.mp3", "label": "SPRINT",    "color": "purple" },
+  { "file": "04.mp3", "label": "BOLT",      "color": "purple" },
+  { "file": "05.mp3", "label": "CHASE",     "color": "purple" },
+  { "file": "06.mp3", "label": "DOGPILE",   "color": "purple" },
+
+  { "file": "07.mp3", "label": "RUN",       "color": "green"  },
+  { "file": "08.mp3", "label": "BEG",       "color": "green"  },
+  { "file": "09.mp3", "label": "STAY",      "color": "green"  },
+  { "file": "10.mp3", "label": "GOBBLE",    "color": "green"  },
+  { "file": "11.mp3", "label": "CHEW",      "color": "green"  },
+
+  { "file": "12.mp3", "label": "PLAY DEAD", "color": "blue"   },
+  { "file": "13.mp3", "label": "GUARD",     "color": "blue"   },
+  { "file": "14.mp3", "label": "SCAVENGE",  "color": "blue"   },
+  { "file": "15.mp3", "label": "FETCH",     "color": "blue"   },
+  { "file": "16.mp3", "label": "HUNT",      "color": "blue"   },
+
+  { "file": "17.mp3", "label": "SEARCH",    "color": "yellow" },
+  { "file": "18.mp3", "label": "WALK",      "color": "yellow" },
+  { "file": "19.mp3", "label": "TROT",      "color": "yellow" },
+  { "file": "20.mp3", "label": "TRACK",     "color": "yellow" },
+  { "file": "21.mp3", "label": "RETRIEVE",  "color": "yellow" },
+  { "file": "22.mp3", "label": "DIG",       "color": "yellow" }
 ]
