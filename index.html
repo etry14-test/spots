@@ -20,6 +20,8 @@
     --ink-dim: #8e94a6;
     --line: #2e3344;
     --accent: #f4b73f;
+    --good: #5fd08a;
+    --bad: #ff8e7a;
     --gap: 10px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -91,61 +93,92 @@
   #gear  { right: calc(env(safe-area-inset-right) + 14px); }
   #panic { left:  calc(env(safe-area-inset-left)  + 14px); }
 
-  /* ---------- Settings sheet ---------- */
-  #settings {
+  /* ---------- Sheets ---------- */
+  .sheet {
     position: fixed; inset: 0; z-index: 30;
     background: var(--bg);
     display: flex; flex-direction: column;
     transform: translateY(100%);
     transition: transform 240ms cubic-bezier(.2,.8,.2,1);
   }
-  #settings.open { transform: none; }
+  .sheet.open { transform: none; }
+  #review { z-index: 31; }
   .sheet-head {
-    display: flex; align-items: center; gap: 12px;
+    display: flex; align-items: center; gap: 10px;
     padding: calc(env(safe-area-inset-top) + 14px) 16px 12px;
     border-bottom: 1px solid var(--line);
   }
-  .sheet-head h1 { margin: 0; font-size: 17px; font-weight: 650; }
+  .sheet-head h1 { margin: 0; font-size: 17px; font-weight: 650; white-space: nowrap; }
   .sheet-head .count { color: var(--ink-dim); font-size: 13px; font-weight: 500; }
   .sheet-head .count.full { color: var(--accent); }
-  .sheet-head button {
-    margin-left: auto;
+  .sheet-head .right { margin-left: auto; display: flex; gap: 8px; }
+  .btn {
     background: var(--accent); color: #14161c;
     border: 0; border-radius: 10px;
-    padding: 9px 16px; font: 650 15px/1 system-ui, sans-serif;
+    padding: 9px 15px; font: 650 15px/1 system-ui, sans-serif;
   }
-  .hint { padding: 12px 16px 4px; color: var(--ink-dim); font-size: 13px; font-weight: 500; }
+  .btn.ghost { background: transparent; color: var(--ink-dim); border: 1px solid var(--line); }
+  .hint { padding: 12px 16px 2px; color: var(--ink-dim); font-size: 13px; font-weight: 500; }
+  .hint b { color: var(--ink); font-weight: 650; }
+  .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: 4px 12px calc(env(safe-area-inset-bottom) + 24px); }
 
-  #list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-          padding: 4px 12px calc(env(safe-area-inset-bottom) + 24px); }
+  /* ---------- Settings rows ---------- */
   .row {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 8px;
     padding: 7px 6px;
     border-bottom: 1px solid var(--line);
   }
-  .slot {
+  .sq {
     flex: 0 0 34px; height: 34px; border-radius: 9px;
     border: 1px solid var(--line); background: transparent;
     color: var(--ink-dim); font: 650 14px/1 system-ui, sans-serif;
     display: grid; place-items: center;
   }
-  .row.on .slot { background: var(--accent); border-color: var(--accent); color: #14161c; }
+  .row.on .sq { background: var(--accent); border-color: var(--accent); color: #14161c; }
+  .row .name { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .row input[type=text] {
-    flex: 1 1 auto; min-width: 0;
+    width: 100%;
     background: var(--pad); border: 1px solid var(--line); border-radius: 9px;
     color: var(--ink); font: 500 15px/1 system-ui, sans-serif;
     padding: 9px 10px;
   }
   .row input[type=text]:focus { outline: none; border-color: var(--accent); }
-  .row .prev {
+  .src {
+    font-size: 11px; color: var(--ink-dim); padding-left: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .src.local { color: var(--good); }
+  .row .mini {
     flex: 0 0 34px; height: 34px; border-radius: 9px;
     border: 1px solid var(--line); background: transparent;
     color: var(--ink-dim); font-size: 14px;
     display: grid; place-items: center;
   }
-  .row .prev:active { color: var(--accent); }
-  .row.missing input[type=text] { color: var(--ink-dim); text-decoration: line-through; }
-  .row.missing .prev { opacity: .3; }
+  .row .mini.lit { color: var(--good); border-color: var(--good); }
+  .row.missing input[type=text] { color: var(--ink-dim); }
+
+  /* ---------- Import ---------- */
+  .pick {
+    display: block; width: 100%; text-align: left;
+    background: var(--pad); border: 1px solid var(--line); border-radius: 12px;
+    color: var(--ink); font: 600 15px/1.3 system-ui, sans-serif;
+    padding: 14px; margin: 10px 0;
+  }
+  .pick small { display: block; color: var(--ink-dim); font-weight: 500; font-size: 12.5px; margin-top: 4px; }
+  .pick:disabled { opacity: .45; }
+  #busy { padding: 14px 16px; color: var(--accent); font-size: 14px; }
+
+  /* Review rows */
+  .rv { display: flex; align-items: center; gap: 8px; padding: 8px 6px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .rv .n { flex: 0 0 24px; color: var(--ink-dim); font-size: 12px; text-align: right; }
+  .rv .pad-name { flex: 1 1 40%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .rv .arrow { flex: 0 0 auto; color: var(--ink-dim); }
+  .rv .fname { flex: 1 1 50%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--good); }
+  .rv .fname.none { color: var(--ink-dim); font-style: italic; }
+  .rv .fname.keep { color: var(--ink-dim); }
+  .leftover { padding: 10px 6px; color: var(--bad); font-size: 13px; border-bottom: 1px solid var(--line); }
+  .sect { padding: 16px 6px 6px; color: var(--ink-dim); font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; }
 
   /* ---------- Splash ---------- */
   #splash {
@@ -159,12 +192,11 @@
   #splash b { color: var(--ink); font-size: 17px; font-weight: 650; }
   #bar { width: min(260px, 70vw); height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
   #bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 140ms linear; }
-  #splash .err { color: #ff8e7a; max-width: 34em; font-size: 14px; }
-  #start {
-    background: var(--accent); color: #14161c; border: 0; border-radius: 12px;
-    padding: 14px 28px; font: 650 17px/1 system-ui, sans-serif;
-    display: none;
-  }
+  #splash .err { color: var(--bad); max-width: 34em; font-size: 14px; }
+  #start { background: var(--accent); color: #14161c; border: 0; border-radius: 12px;
+           padding: 14px 28px; font: 650 17px/1 system-ui, sans-serif; display: none; }
+
+  .hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -173,14 +205,59 @@
 <button id="panic" class="fab" aria-label="Stop all sounds">&#9632;</button>
 <button id="gear"  class="fab" aria-label="Settings">&#9881;</button>
 
-<div id="settings" aria-hidden="true">
+<!-- ---------- Settings ---------- -->
+<div id="settings" class="sheet" aria-hidden="true">
   <div class="sheet-head">
-    <h1>Choose pads</h1>
+    <h1>Pads</h1>
     <span class="count" id="count"></span>
-    <button id="done">Done</button>
+    <span class="right">
+      <button class="btn ghost" id="openImport">Load&hellip;</button>
+      <button class="btn" id="done">Done</button>
+    </span>
   </div>
-  <p class="hint">Tap the square to put a sound on the board &mdash; the number shows its position. Tap a name to rename it.</p>
-  <div id="list"></div>
+  <p class="hint">Tap the square to put a pad on the board &mdash; the number is its position.
+    Tap a name to rename it. <b>&#128193;</b> loads your own audio for that pad.</p>
+  <div class="scroll" id="list"></div>
+</div>
+
+<!-- ---------- Import ---------- -->
+<div id="import" class="sheet" aria-hidden="true">
+  <div class="sheet-head">
+    <h1>Load your audio</h1>
+    <span class="right"><button class="btn ghost" id="closeImport">Back</button></span>
+  </div>
+  <div class="scroll">
+    <p class="hint">Files are matched to your pad names and stay <b>on this device only</b> &mdash;
+      nothing is uploaded. Rename your pads first for the matching to work well.</p>
+
+    <button class="pick" id="pickZip">Pick a .zip of your sounds folder
+      <small>One tap. Unzipped here on the phone &mdash; the usual choice on Android.</small></button>
+
+    <button class="pick" id="pickFiles">Pick audio files
+      <small>Multi-select in the file picker: long-press one file, then tap the rest.</small></button>
+
+    <button class="pick" id="pickDir">Pick a folder
+      <small>Desktop browsers only &mdash; Android has no folder picker.</small></button>
+
+    <div id="busy" class="hidden"></div>
+
+    <p class="sect">Stored on this device</p>
+    <p class="hint" id="storeInfo" style="padding-left:6px"></p>
+    <button class="pick" id="clearClips" style="color:var(--bad)">Remove all loaded audio
+      <small>Reverts every pad to the built-in placeholder tone.</small></button>
+  </div>
+</div>
+
+<!-- ---------- Match review ---------- -->
+<div id="review" class="sheet" aria-hidden="true">
+  <div class="sheet-head">
+    <h1>Check matches</h1>
+    <span class="right">
+      <button class="btn ghost" id="cancelReview">Cancel</button>
+      <button class="btn" id="applyReview">Apply</button>
+    </span>
+  </div>
+  <div class="scroll" id="reviewList"></div>
 </div>
 
 <div id="splash">
@@ -194,21 +271,26 @@
 (() => {
   'use strict';
 
-  const SLOTS = 6;                     // pads visible on the board at once
+  const SLOTS = 6;                       // pads visible on the board at once
   const LS_KEY = 'spots.config.v1';
+  const MATCH_FLOOR = 34;                // below this, a name match is too weak to trust
+  const AUDIO_RE = /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|weba|webm|mp4|caf|aif|aiff)$/i;
 
   const $ = s => document.querySelector(s);
   const board = $('#board'), list = $('#list'), settings = $('#settings');
+  const importSheet = $('#import'), review = $('#review'), reviewList = $('#reviewList');
+  const busy = $('#busy');
   const splash = $('#splash'), bar = $('#bar i'), status = $('#status'), startBtn = $('#start');
 
-  let sounds = [];          // [{file, label}] from sounds/sounds.json
-  let buffers = [];         // decoded AudioBuffer per index (null if it failed to load)
+  let sounds = [];        // [{file, label}] defaults from sounds/sounds.json
+  let clips = {};         // slot index -> {blob, filename}  (from IndexedDB)
+  let buffers = [];       // decoded AudioBuffer per slot (null if unavailable)
   let cfg = { active: [], labels: {} };
-  let ctx = null;
-  let master = null;
-  let live = new Set();     // currently-playing sources, so Stop-all can cut them
+  let ctx = null, master = null;
+  let live = new Set();
+  let pending = null;     // proposed mapping awaiting confirmation
 
-  /* ---------------- config persistence ---------------- */
+  /* ================= config ================= */
 
   function loadCfg() {
     try {
@@ -227,7 +309,46 @@
   const saveCfg = () => localStorage.setItem(LS_KEY, JSON.stringify(cfg));
   const labelOf = i => (cfg.labels[i] ?? sounds[i]?.label ?? `Pad ${i + 1}`);
 
-  /* ---------------- audio ---------------- */
+  /* ================= IndexedDB (your audio lives here) ================= */
+
+  function db() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('spots', 1);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        if (!d.objectStoreNames.contains('clips')) d.createObjectStore('clips');
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  }
+  function tx(mode, fn) {
+    return db().then(d => new Promise((res, rej) => {
+      const t = d.transaction('clips', mode);
+      const out = fn(t.objectStore('clips'));
+      t.oncomplete = () => res(out);
+      t.onerror = () => rej(t.error);
+      t.onabort = () => rej(t.error);
+    }));
+  }
+  function clipsLoad() {
+    return db().then(d => new Promise((res, rej) => {
+      const t = d.transaction('clips', 'readonly');
+      const cur = t.objectStore('clips').openCursor();
+      const out = {};
+      cur.onsuccess = e => {
+        const c = e.target.result;
+        if (!c) return res(out);
+        out[c.key] = c.value;
+        c.continue();
+      };
+      cur.onerror = () => rej(cur.error);
+    }));
+  }
+  const clipPut   = (i, blob, filename) => tx('readwrite', s => s.put({ blob, filename }, i));
+  const clipClear = ()                  => tx('readwrite', s => s.clear());
+
+  /* ================= audio ================= */
 
   function makeCtx() {
     if (ctx) return ctx;
@@ -236,11 +357,7 @@
     master.connect(ctx.destination);
     return ctx;
   }
-
-  // iOS/Android suspend the context until a real gesture; nudge it on every tap.
-  function resume() {
-    if (ctx && ctx.state !== 'running') ctx.resume();
-  }
+  const resume = () => { if (ctx && ctx.state !== 'running') ctx.resume(); };
 
   function play(i) {
     const buf = buffers[i];
@@ -253,13 +370,31 @@
     live.add(src);
     src.start();
   }
-
   function stopAll() {
     live.forEach(s => { try { s.stop(); } catch (_) {} });
     live.clear();
   }
 
-  /* ---------------- board rendering ---------------- */
+  // Decode one slot: your stored clip wins over the bundled placeholder.
+  async function decodeSlot(i) {
+    try {
+      let bytes;
+      if (clips[i]) {
+        bytes = await clips[i].blob.arrayBuffer();
+      } else {
+        const r = await fetch('sounds/' + sounds[i].file);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        bytes = await r.arrayBuffer();
+      }
+      buffers[i] = await ctx.decodeAudioData(bytes);
+      return true;
+    } catch (_) {
+      buffers[i] = null;
+      return false;
+    }
+  }
+
+  /* ================= board ================= */
 
   function renderBoard() {
     board.innerHTML = '';
@@ -271,20 +406,20 @@
         el.classList.add('empty');
         el.textContent = 'empty';
       } else {
-        el.textContent = labelOf(i);
         el.dataset.i = i;
-        if (!buffers[i]) { el.classList.add('empty'); el.textContent = labelOf(i) + '\n(missing)'; }
+        el.textContent = buffers[i] ? labelOf(i) : labelOf(i) + '\n(no audio)';
+        if (!buffers[i]) el.classList.add('empty');
       }
       board.appendChild(el);
     }
   }
 
-  // pointerdown, not click: fires on finger-down with no 300ms tap resolution delay
+  // pointerdown, not click: fires on finger-down with no tap-resolution delay
   board.addEventListener('pointerdown', e => {
     const pad = e.target.closest('.pad');
     if (!pad || pad.dataset.i === undefined) return;
     const i = +pad.dataset.i;
-    if (!buffers[i]) return;                 // missing file — don't flash a pad that makes no sound
+    if (!buffers[i]) return;
     play(i);
     pad.classList.add('hit');
     if (navigator.vibrate) navigator.vibrate(12);
@@ -295,14 +430,13 @@
   board.addEventListener('pointerup', unhit);
   board.addEventListener('pointercancel', unhit);
   board.addEventListener('pointerleave', unhit);
-  // Suppress the long-press context menu so holding a pad doesn't pop a menu
   board.addEventListener('contextmenu', e => e.preventDefault());
 
-  /* ---------------- settings sheet ---------------- */
+  /* ================= settings ================= */
 
   function renderCount() {
     const c = $('#count');
-    c.textContent = `${cfg.active.length} / ${SLOTS}`;
+    c.textContent = `${cfg.active.length} / ${SLOTS} on board`;
     c.classList.toggle('full', cfg.active.length >= SLOTS);
   }
 
@@ -313,29 +447,41 @@
       const row = document.createElement('div');
       row.className = 'row' + (pos > -1 ? ' on' : '') + (buffers[i] ? '' : ' missing');
 
-      const slot = document.createElement('button');
-      slot.className = 'slot';
-      slot.textContent = pos > -1 ? pos + 1 : '';
-      slot.setAttribute('aria-label', pos > -1 ? `Remove ${labelOf(i)} from board` : `Add ${labelOf(i)} to board`);
-      slot.addEventListener('click', () => toggle(i));
+      const sq = document.createElement('button');
+      sq.className = 'sq';
+      sq.textContent = pos > -1 ? pos + 1 : '';
+      sq.setAttribute('aria-label', pos > -1 ? `Remove ${labelOf(i)} from board` : `Add ${labelOf(i)} to board`);
+      sq.addEventListener('click', () => toggle(i));
 
+      const wrap = document.createElement('div');
+      wrap.className = 'name';
       const name = document.createElement('input');
       name.type = 'text';
       name.value = labelOf(i);
-      name.setAttribute('aria-label', `Name for ${s.file}`);
+      name.setAttribute('aria-label', `Name for pad ${i + 1}`);
       name.addEventListener('change', () => {
         const v = name.value.trim();
         if (v) cfg.labels[i] = v; else { delete cfg.labels[i]; name.value = labelOf(i); }
         saveCfg(); renderBoard(); renderList();
       });
+      const src = document.createElement('div');
+      src.className = 'src' + (clips[i] ? ' local' : '');
+      src.textContent = clips[i] ? clips[i].filename : 'placeholder tone';
+      wrap.append(name, src);
+
+      const load = document.createElement('button');
+      load.className = 'mini' + (clips[i] ? ' lit' : '');
+      load.textContent = '📁';
+      load.setAttribute('aria-label', `Load audio for ${labelOf(i)}`);
+      load.addEventListener('click', () => pickOne(i));
 
       const prev = document.createElement('button');
-      prev.className = 'prev';
+      prev.className = 'mini';
       prev.textContent = '▶';
       prev.setAttribute('aria-label', `Preview ${labelOf(i)}`);
       prev.addEventListener('click', () => play(i));
 
-      row.append(slot, name, prev);
+      row.append(sq, wrap, load, prev);
       list.appendChild(row);
     });
     renderCount();
@@ -344,29 +490,325 @@
   function toggle(i) {
     const at = cfg.active.indexOf(i);
     if (at > -1) {
-      cfg.active.splice(at, 1);                 // removing shifts everything after it up a slot
+      cfg.active.splice(at, 1);            // removing shifts everything after it up a slot
     } else if (cfg.active.length < SLOTS) {
       cfg.active.push(i);
     } else {
-      // Board is full: drop the oldest pick so a tap always does something visible
-      cfg.active.shift();
+      cfg.active.shift();                  // board full: drop the oldest pick
       cfg.active.push(i);
     }
     saveCfg(); renderBoard(); renderList();
   }
 
-  $('#gear').addEventListener('click', () => {
-    renderList();
-    settings.classList.add('open');
-    settings.setAttribute('aria-hidden', 'false');
-  });
-  $('#done').addEventListener('click', () => {
-    settings.classList.remove('open');
-    settings.setAttribute('aria-hidden', 'true');
-  });
-  $('#panic').addEventListener('click', stopAll);
+  const open  = el => { el.classList.add('open');    el.setAttribute('aria-hidden', 'false'); };
+  const close = el => { el.classList.remove('open'); el.setAttribute('aria-hidden', 'true'); };
 
-  /* ---------------- keep the screen awake ---------------- */
+  $('#gear').addEventListener('click', () => { renderList(); open(settings); });
+  $('#done').addEventListener('click', () => close(settings));
+  $('#panic').addEventListener('click', stopAll);
+  $('#openImport').addEventListener('click', () => { showStorage(); open(importSheet); });
+  $('#closeImport').addEventListener('click', () => close(importSheet));
+
+  /* ================= name matching ================= */
+
+  // "Air_Horn-LOUD (1).mp3" -> "air horn loud 1"
+  function norm(s) {
+    return String(s)
+      .replace(/\.[^.]+$/, '')
+      .toLowerCase()
+      .replace(/[_\-.()\[\]{}+&,'"!?]+/g, ' ')
+      .replace(/[^a-z0-9 ]+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function score(a, b) {
+    if (!a || !b) return 0;
+    if (a === b) return 100;
+    const ta = a.split(' '), tb = b.split(' ');
+    const sa = new Set(ta), sb = new Set(tb);
+    let inter = 0;
+    sa.forEach(t => { if (sb.has(t)) inter++; });
+    const union = new Set([...sa, ...sb]).size;
+    let s = union ? (inter / union) * 72 : 0;
+    // A substring hit is strong evidence, scaled by how much of the longer string it covers
+    if (a.includes(b) || b.includes(a)) {
+      const ratio = Math.min(a.length, b.length) / Math.max(a.length, b.length);
+      s = Math.max(s, 52 + ratio * 44);
+    }
+    return s;
+  }
+
+  // Greedy global best-first assignment, so one strong pair can't be stolen by a weak one.
+  function matchFiles(files) {
+    const pads = sounds.map((_, i) => ({ i, n: norm(labelOf(i)) }));
+    const fs = files.map((f, k) => ({ k, f, n: norm(f.name) }));
+    const pairs = [];
+    pads.forEach(p => fs.forEach(f => {
+      const sc = score(p.n, f.n);
+      if (sc >= MATCH_FLOOR) pairs.push({ i: p.i, k: f.k, sc });
+    }));
+    pairs.sort((x, y) => y.sc - x.sc);
+
+    const bySlot = {}, usedFile = new Set();
+    pairs.forEach(pr => {
+      if (bySlot[pr.i] !== undefined || usedFile.has(pr.k)) return;
+      bySlot[pr.i] = pr.k;
+      usedFile.add(pr.k);
+    });
+
+    // Leftovers fill pads you have NOT renamed. A custom name means you claimed
+    // that pad for something specific, so an unmatched file must never land on it.
+    const spare = fs.filter(f => !usedFile.has(f.k)).map(f => f.k);
+    for (let i = 0; i < sounds.length && spare.length; i++) {
+      if (bySlot[i] === undefined && cfg.labels[i] === undefined) {
+        bySlot[i] = spare.shift();
+        usedFile.add(bySlot[i]);
+      }
+    }
+    return { bySlot, files: fs, unplaced: spare.map(k => fs[k].f.name) };
+  }
+
+  /* ================= import ================= */
+
+  function setBusy(msg) {
+    if (!msg) { busy.classList.add('hidden'); busy.textContent = ''; return; }
+    busy.classList.remove('hidden');
+    busy.textContent = msg;
+  }
+
+  function fileDialog({ multiple = false, dir = false, zip = false } = {}) {
+    return new Promise(res => {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      if (zip) inp.accept = '.zip,application/zip';
+      else inp.accept = 'audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus,.flac,.aiff';
+      if (multiple) inp.multiple = true;
+      if (dir) { inp.webkitdirectory = true; inp.multiple = true; }
+      inp.style.display = 'none';
+      document.body.appendChild(inp);
+      inp.addEventListener('change', () => {
+        const out = Array.from(inp.files || []);
+        inp.remove();
+        res(out);
+      });
+      // No 'cancel' event in older browsers; the element is harmless if left behind.
+      inp.click();
+    });
+  }
+
+  // Minimal ZIP reader: walks the central directory and inflates with
+  // DecompressionStream, so no library is needed.
+  async function unzip(file) {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    let eocd = -1;
+    const floor = Math.max(0, buf.length - 65557 - 22);
+    for (let i = buf.length - 22; i >= floor; i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('that file is not a readable .zip');
+
+    const count = dv.getUint16(eocd + 10, true);
+    let off = dv.getUint32(eocd + 16, true);
+    const out = [];
+    for (let n = 0; n < count; n++) {
+      if (off + 46 > buf.length || dv.getUint32(off, true) !== 0x02014b50) break;
+      const method  = dv.getUint16(off + 10, true);
+      const csize   = dv.getUint32(off + 20, true);
+      const nameLen = dv.getUint16(off + 28, true);
+      const exLen   = dv.getUint16(off + 30, true);
+      const cmLen   = dv.getUint16(off + 32, true);
+      const lho     = dv.getUint32(off + 42, true);
+      const path    = new TextDecoder().decode(buf.subarray(off + 46, off + 46 + nameLen));
+      off += 46 + nameLen + exLen + cmLen;
+
+      const base = path.split('/').pop();
+      if (!base || path.endsWith('/') || path.startsWith('__MACOSX') || base.startsWith('.')) continue;
+      if (!AUDIO_RE.test(base)) continue;
+      if (dv.getUint32(lho, true) !== 0x04034b50) continue;
+
+      const lName = dv.getUint16(lho + 26, true);
+      const lEx   = dv.getUint16(lho + 28, true);
+      const start = lho + 30 + lName + lEx;
+      const comp  = buf.subarray(start, start + csize);
+
+      let data;
+      if (method === 0) data = comp;
+      else if (method === 8) {
+        if (typeof DecompressionStream !== 'function') throw new Error('this browser cannot inflate zips');
+        const stream = new Blob([comp]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        data = new Uint8Array(await new Response(stream).arrayBuffer());
+      } else continue;                        // unsupported method, skip quietly
+      out.push(new File([data], base));
+    }
+    return out;
+  }
+
+  async function intake(files, label) {
+    const audio = files.filter(f => AUDIO_RE.test(f.name));
+    if (!audio.length) {
+      setBusy('');
+      alert(`No audio files found in ${label}.\n\nSupported: mp3, m4a, aac, wav, ogg, opus, flac, aiff.`);
+      return;
+    }
+    if (navigator.storage?.persist) { try { await navigator.storage.persist(); } catch (_) {} }
+    pending = { ...matchFiles(audio), audio };
+    setBusy('');
+    renderReview();
+    open(review);
+  }
+
+  $('#pickFiles').addEventListener('click', async () => {
+    const f = await fileDialog({ multiple: true });
+    if (f.length) { setBusy(`Reading ${f.length} file(s)…`); await intake(f, 'your selection'); }
+  });
+
+  $('#pickDir').addEventListener('click', async () => {
+    const f = await fileDialog({ dir: true });
+    if (!f.length) {
+      alert('No files came back.\n\nAndroid browsers have no folder picker — use the .zip option, or multi-select the files.');
+      return;
+    }
+    setBusy(`Reading ${f.length} file(s)…`);
+    await intake(f, 'that folder');
+  });
+
+  $('#pickZip').addEventListener('click', async () => {
+    const f = await fileDialog({ zip: true });
+    if (!f.length) return;
+    setBusy('Unzipping…');
+    try {
+      const inner = await unzip(f[0]);
+      await intake(inner, f[0].name);
+    } catch (err) {
+      setBusy('');
+      alert('Could not read that zip: ' + err.message);
+    }
+  });
+
+  $('#clearClips').addEventListener('click', async () => {
+    if (!Object.keys(clips).length) { alert('No loaded audio to remove.'); return; }
+    if (!confirm('Remove every audio file you loaded, on this device?\n\nAll pads go back to the placeholder tones. Your pad names and board layout are kept.')) return;
+    setBusy('Removing…');
+    await clipClear();
+    clips = {};
+    for (let i = 0; i < sounds.length; i++) await decodeSlot(i);
+    setBusy('');
+    showStorage(); renderBoard(); renderList();
+  });
+
+  async function showStorage() {
+    const n = Object.keys(clips).length;
+    let txt = n ? `${n} of ${sounds.length} pads use your own audio.` : 'No audio loaded yet — all pads are placeholder tones.';
+    if (navigator.storage?.estimate) {
+      try {
+        const { usage } = await navigator.storage.estimate();
+        if (usage) txt += ` Using ${(usage / 1048576).toFixed(1)} MB.`;
+      } catch (_) {}
+    }
+    const persisted = navigator.storage?.persisted ? await navigator.storage.persisted().catch(() => false) : false;
+    if (n && !persisted) txt += ' Storage is not marked persistent, so the browser could evict it if the device runs low.';
+    $('#storeInfo').textContent = txt;
+  }
+
+  /* ================= review ================= */
+
+  function renderReview() {
+    const { bySlot, files, unplaced } = pending;
+    reviewList.innerHTML = '';
+
+    const matched = Object.keys(bySlot).length;
+    const head = document.createElement('p');
+    head.className = 'hint';
+    head.style.padding = '12px 6px 2px';
+    head.innerHTML = `<b>${matched}</b> of ${files.length} file(s) placed onto pads. `
+      + `Pads showing <i>keeps current</i> are untouched. Nothing is saved until you tap Apply.`;
+    reviewList.appendChild(head);
+
+    sounds.forEach((_, i) => {
+      const k = bySlot[i];
+      const rv = document.createElement('div');
+      rv.className = 'rv';
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = i + 1;
+      const pn = document.createElement('span'); pn.className = 'pad-name'; pn.textContent = labelOf(i);
+      const ar = document.createElement('span'); ar.className = 'arrow'; ar.textContent = '←';
+      const fn = document.createElement('span');
+      if (k === undefined) {
+        fn.className = 'fname ' + (clips[i] ? 'keep' : 'none');
+        fn.textContent = clips[i] ? clips[i].filename + ' (keeps current)' : 'keeps placeholder';
+      } else {
+        fn.className = 'fname';
+        fn.textContent = files[k].f.name;
+      }
+      rv.append(n, pn, ar, fn);
+      reviewList.appendChild(rv);
+    });
+
+    if (unplaced.length) {
+      const s = document.createElement('p');
+      s.className = 'sect';
+      s.textContent = `${unplaced.length} file(s) with nowhere to go`;
+      reviewList.appendChild(s);
+      unplaced.forEach(nm => {
+        const d = document.createElement('div');
+        d.className = 'leftover';
+        d.textContent = nm;
+        reviewList.appendChild(d);
+      });
+      const why = document.createElement('p');
+      why.className = 'hint';
+      why.style.padding = '8px 6px 20px';
+      why.textContent = `There are only ${sounds.length} pads. Rename pads to match these filenames, or load them one at a time with the 📁 button.`;
+      reviewList.appendChild(why);
+    }
+  }
+
+  $('#cancelReview').addEventListener('click', () => { pending = null; close(review); });
+
+  $('#applyReview').addEventListener('click', async () => {
+    if (!pending) return close(review);
+    const { bySlot, files } = pending;
+    const entries = Object.entries(bySlot);
+    setBusy('Saving…');
+    close(review);
+
+    let ok = 0; const bad = [];
+    for (const [slotStr, k] of entries) {
+      const i = +slotStr, file = files[k].f;
+      await clipPut(i, file, file.name);
+      clips[i] = { blob: file, filename: file.name };
+      if (await decodeSlot(i)) ok++;
+      else { bad.push(file.name); delete clips[i]; await tx('readwrite', s => s.delete(i)); await decodeSlot(i); }
+    }
+
+    pending = null;
+    setBusy('');
+    showStorage(); renderBoard(); renderList();
+    if (bad.length) {
+      alert(`${ok} pad(s) loaded.\n\n${bad.length} file(s) could not be decoded by this browser and were skipped:\n\n`
+        + bad.slice(0, 8).join('\n') + (bad.length > 8 ? `\n…and ${bad.length - 8} more` : ''));
+    }
+  });
+
+  // Single pad, straight from the settings row
+  async function pickOne(i) {
+    const f = await fileDialog({ multiple: false });
+    if (!f.length) return;
+    if (navigator.storage?.persist) { try { await navigator.storage.persist(); } catch (_) {} }
+    const file = f[0];
+    await clipPut(i, file, file.name);
+    clips[i] = { blob: file, filename: file.name };
+    if (!(await decodeSlot(i))) {
+      delete clips[i];
+      await tx('readwrite', s => s.delete(i));
+      await decodeSlot(i);
+      alert(`This browser could not decode "${file.name}". Pad unchanged.`);
+    }
+    showStorage(); renderBoard(); renderList();
+  }
+
+  /* ================= wake lock ================= */
 
   let lock = null;
   async function wake() {
@@ -380,7 +822,7 @@
     if (document.visibilityState === 'visible') { wake(); resume(); }
   });
 
-  /* ---------------- boot ---------------- */
+  /* ================= boot ================= */
 
   async function boot() {
     let manifest;
@@ -391,7 +833,7 @@
       if (!Array.isArray(manifest) || !manifest.length) throw new Error('sounds.json is empty');
     } catch (err) {
       status.innerHTML = `<span class="err">Could not read <b>sounds/sounds.json</b> &mdash; ${err.message}.`
-        + `<br><br>Note this needs to be served over http, not opened as a file:// path.</span>`;
+        + `<br><br>This needs to be served over http, not opened as a file:// path.</span>`;
       return;
     }
 
@@ -401,33 +843,26 @@
     }));
     loadCfg();
     renderBoard();
-
     makeCtx();
 
+    try { clips = await clipsLoad(); } catch (_) { clips = {}; }
+
     // Decode everything up front so a tap is pure playback — no fetch, no decode, no lag.
-    let done = 0, failed = [];
-    await Promise.all(sounds.map(async (s, i) => {
-      try {
-        const r = await fetch('sounds/' + s.file);
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        buffers[i] = await ctx.decodeAudioData(await r.arrayBuffer());
-      } catch (_) {
-        buffers[i] = null;
-        failed.push(s.file);
-      }
+    let done = 0;
+    const results = await Promise.all(sounds.map(async (_, i) => {
+      const ok = await decodeSlot(i);
       bar.style.width = (++done / sounds.length * 100) + '%';
+      return ok;
     }));
+    const failed = results.filter(r => !r).length;
 
     renderBoard();
 
-    if (failed.length === sounds.length) {
-      status.innerHTML = `<span class="err">None of the ${sounds.length} audio files could be loaded.`
-        + `<br>Check the filenames in sounds/sounds.json.</span>`;
+    if (failed === sounds.length) {
+      status.innerHTML = `<span class="err">None of the ${sounds.length} sounds could be loaded.</span>`;
       return;
     }
-    status.textContent = failed.length
-      ? `${failed.length} file${failed.length > 1 ? 's' : ''} failed to load — those pads are greyed out.`
-      : '';
+    status.textContent = failed ? `${failed} pad(s) have no usable audio.` : '';
 
     // AudioContext starts suspended without a gesture; one deliberate tap unlocks it.
     startBtn.style.display = 'block';

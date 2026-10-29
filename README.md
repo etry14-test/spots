@@ -21,11 +21,43 @@ To try it on your phone on the same wifi, use your machine's LAN address
 (`ip addr | grep 'inet 192'`), e.g. `http://192.168.1.50:8777`. Sound and pads
 work, but **installing to the home screen needs HTTPS** — see below.
 
-## Adding your own sounds
+## Adding your own audio (the normal way)
 
-1. Drop your audio into `sounds/`. Any format the browser decodes works —
-   `.mp3`, `.m4a`, `.ogg`, `.wav`. Keep them short; they're all decoded into
-   memory at startup.
+Load it from the device, in the app. **Nothing is uploaded** — your clips are
+stored in IndexedDB on that device only, and never touch the repo or the host.
+This is deliberate: the hosted copy is public, so audio you didn't make
+shouldn't go anywhere near it.
+
+1. Open **⚙ → Load…**
+2. **Rename your pads first** if you want name matching to work — matching
+   compares filenames to pad names.
+3. Pick one of:
+   - **A `.zip` of your sounds folder** — one tap, unzipped in the browser.
+     The usual choice on Android.
+   - **Audio files** — multi-select in the picker (long-press one, tap the rest).
+   - **A folder** — desktop browsers only. Android has no folder picker; neither
+     `webkitdirectory` nor `showDirectoryPicker()` is implemented there.
+4. You get a **match review** screen before anything is saved. Confirm or cancel.
+
+Matching normalises case, underscores, dashes and punctuation, so
+`Air_Horn-LOUD (1).mp3` matches a pad named `Air Horn Loud 1`. It scores every
+filename against every pad name and assigns best-first, so a close match can't
+be stolen by a weaker one. Leftover files fill pads you haven't renamed —
+never ones you have, since a custom name means you claimed that pad. Surplus
+files are listed rather than silently dropped.
+
+Per-pad: the **📁** button on any settings row loads a single file.
+**⚙ → Load… → Remove all loaded audio** reverts everything to the placeholders.
+
+Formats are whatever the browser decodes: mp3, m4a, aac, wav, ogg, opus, flac,
+aiff. Anything it can't decode is reported and skipped, leaving the pad as-is.
+
+## Changing the bundled placeholder sounds
+
+Only needed if you want different *defaults* baked into the repo — note these
+**do** get published, so only commit audio you're fine making public.
+
+1. Drop your audio into `sounds/`.
 2. Edit `sounds/sounds.json` to match:
 
 ```json
@@ -37,6 +69,8 @@ work, but **installing to the home screen needs HTTPS** — see below.
 
 `label` is just the default pad name — you can rename pads in the app, and your
 rename wins from then on.
+
+The list can be any length; it currently has 22 entries, which is the pad count.
 
 There's nothing special about the number 22: the list can be any length. The
 settings screen shows every entry and you pick 6 for the board.
