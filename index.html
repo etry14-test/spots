@@ -103,6 +103,16 @@
   .fab:active { color: var(--accent); border-color: var(--accent); }
   #gear  { right: calc(env(safe-area-inset-right) + 14px); }
   #panic { left:  calc(env(safe-area-inset-left)  + 14px); }
+  #theme { left: 50%; margin-left: -22px; font-size: 20px; }
+  #theme.playing { color: var(--accent); border-color: var(--accent); }
+  #theme.none { opacity: .4; }
+
+  /* Theme progress — a hairline along the very bottom, only while playing */
+  #themebar {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 3px;
+    z-index: 21; pointer-events: none;
+  }
+  #themebar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 200ms linear; }
 
   /* ---------- Sheets ---------- */
   .sheet {
@@ -215,7 +225,9 @@
 
 <div id="board"></div>
 <button id="panic" class="fab" aria-label="Stop all sounds">&#9632;</button>
+<button id="theme" class="fab none" aria-label="No theme song loaded">&#9834;</button>
 <button id="gear"  class="fab" aria-label="Settings">&#9881;</button>
+<div id="themebar"><i></i></div>
 
 <!-- ---------- Settings ---------- -->
 <div id="settings" class="sheet" aria-hidden="true">
@@ -253,10 +265,17 @@
 
     <div id="busy" class="hidden"></div>
 
+    <p class="sect">Theme song</p>
+    <p class="hint" id="themeInfo" style="padding-left:6px"></p>
+    <button class="pick" id="pickTheme">Pick the theme song
+      <small>Plays from the &#9834; button, once per game. Not one of the 22 pads.
+        Any file with &ldquo;theme&rdquo; in its name is picked up automatically from a zip.</small></button>
+    <button class="pick hidden" id="removeTheme" style="color:var(--bad)">Remove the theme song</button>
+
     <p class="sect">Stored on this device</p>
     <p class="hint" id="storeInfo" style="padding-left:6px"></p>
-    <button class="pick" id="clearClips" style="color:var(--bad)">Remove all loaded audio
-      <small>Reverts every pad to the built-in placeholder tone.</small></button>
+    <button class="pick" id="clearClips" style="color:var(--bad)">Remove audio loaded onto pads
+      <small>Reverts all 22 pads to the built-in placeholder tones. Keeps your theme song and pad names.</small></button>
   </div>
 </div>
 
@@ -343,22 +362,36 @@
       t.onabort = () => rej(t.error);
     }));
   }
+  // The theme lives in the same store under a string key. It must be split out:
+  // everything downstream assumes `clips` is keyed only by pad index.
   function clipsLoad() {
     return db().then(d => new Promise((res, rej) => {
       const t = d.transaction('clips', 'readonly');
       const cur = t.objectStore('clips').openCursor();
-      const out = {};
+      const pads = {};
+      let theme = null;
       cur.onsuccess = e => {
         const c = e.target.result;
-        if (!c) return res(out);
-        out[c.key] = c.value;
+        if (!c) return res({ pads, theme });
+        if (c.key === 'theme') theme = c.value;
+        else if (Number.isInteger(c.key)) pads[c.key] = c.value;
         c.continue();
       };
       cur.onerror = () => rej(cur.error);
     }));
   }
-  const clipPut   = (i, blob, filename) => tx('readwrite', s => s.put({ blob, filename }, i));
-  const clipClear = ()                  => tx('readwrite', s => s.clear());
+  const clipPut = (key, blob, filename) => tx('readwrite', s => s.put({ blob, filename }, key));
+
+  // Pad clips only — a blanket store.clear() would take the theme song with it.
+  const clipClearPads = () => tx('readwrite', s => {
+    const cur = s.openCursor();
+    cur.onsuccess = e => {
+      const c = e.target.result;
+      if (!c) return;
+      if (Number.isInteger(c.key)) c.delete();
+      c.continue();
+    };
+  });
 
   /* ================= audio ================= */
 
@@ -385,6 +418,77 @@
   function stopAll() {
     live.forEach(s => { try { s.stop(); } catch (_) {} });
     live.clear();
+  }
+
+  /* ================= theme song =================
+     Deliberately NOT a decoded AudioBuffer like the pads: a full song would
+     occupy hundreds of MB as float PCM. An <audio> element streams it from a
+     blob URL instead. Latency is irrelevant for a once-per-game track. */
+
+  let themeClip = null;                  // {blob, filename} or null
+  let themeUrl = null;
+  const themeEl = new Audio();
+  themeEl.preload = 'metadata';
+  const themeBtn = $('#theme'), themeBar = $('#themebar i');
+  const THEME_KEY = 'theme';
+
+  function setTheme(clip) {
+    themeClip = clip || null;
+    if (themeUrl) { URL.revokeObjectURL(themeUrl); themeUrl = null; }
+    if (themeClip) {
+      themeUrl = URL.createObjectURL(themeClip.blob);
+      themeEl.src = themeUrl;
+      if ('mediaSession' in navigator && window.MediaMetadata) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: themeClip.filename.replace(/\.[^.]+$/, ''),
+          artist: 'Spots'
+        });
+      }
+    } else {
+      themeEl.removeAttribute('src');
+    }
+    renderTheme();
+  }
+
+  function renderTheme() {
+    const playing = !!themeClip && !themeEl.paused;
+    themeBtn.classList.toggle('none', !themeClip);
+    themeBtn.classList.toggle('playing', playing);
+    themeBtn.textContent = playing ? '■' : '♪';
+    themeBtn.setAttribute('aria-label',
+      !themeClip ? 'No theme song loaded' : playing ? 'Stop theme song' : 'Play theme song');
+  }
+
+  function stopTheme() {
+    try { themeEl.pause(); themeEl.currentTime = 0; } catch (_) {}
+    themeBar.style.width = '0';
+    renderTheme();
+  }
+
+  themeBtn.addEventListener('click', () => {
+    if (!themeClip) { showStorage(); open(importSheet); return; }
+    if (themeEl.paused) {
+      themeEl.currentTime = 0;             // always from the top — it's a once-per-game cue
+      themeEl.play().catch(err => alert('Could not play the theme: ' + err.message));
+    } else {
+      stopTheme();
+    }
+  });
+
+  themeEl.addEventListener('timeupdate', () => {
+    if (themeEl.duration) themeBar.style.width = (themeEl.currentTime / themeEl.duration * 100) + '%';
+  });
+  themeEl.addEventListener('ended', () => { themeBar.style.width = '0'; renderTheme(); });
+  themeEl.addEventListener('play', renderTheme);
+  themeEl.addEventListener('pause', renderTheme);
+
+  // Lock-screen / notification controls, handy for a multi-minute track
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler('play',  () => themeEl.play().catch(() => {}));
+      navigator.mediaSession.setActionHandler('pause', () => themeEl.pause());
+      navigator.mediaSession.setActionHandler('stop',  stopTheme);
+    } catch (_) {}
   }
 
   // Decode one slot: your stored clip wins over the bundled placeholder.
@@ -519,11 +623,25 @@
 
   $('#gear').addEventListener('click', () => { renderList(); open(settings); });
   $('#done').addEventListener('click', () => close(settings));
-  $('#panic').addEventListener('click', stopAll);
+  $('#panic').addEventListener('click', () => { stopAll(); stopTheme(); });
   $('#openImport').addEventListener('click', () => { showStorage(); open(importSheet); });
   $('#closeImport').addEventListener('click', () => close(importSheet));
 
   /* ================= name matching ================= */
+
+  // A file with "theme" as a word in its name is the theme song, not a pad.
+  // "Oswald-theme.mp3" -> norm "oswald theme" -> matches.
+  const THEME_RE = /(^|\s)theme(\s|$)/;
+
+  function splitTheme(files) {
+    let themeFile = null;
+    const rest = [];
+    for (const f of files) {
+      if (!themeFile && THEME_RE.test(norm(f.name))) themeFile = f;
+      else rest.push(f);
+    }
+    return { themeFile, rest };
+  }
 
   // "Air_Horn-LOUD (1).mp3" -> "air horn loud 1"
   function norm(s) {
@@ -670,7 +788,8 @@
       return;
     }
     if (navigator.storage?.persist) { try { await navigator.storage.persist(); } catch (_) {} }
-    pending = { ...matchFiles(audio), audio };
+    const { themeFile, rest } = splitTheme(audio);
+    pending = { ...matchFiles(rest), audio: rest, themeFile };
     setBusy('');
     renderReview();
     open(review);
@@ -704,11 +823,30 @@
     }
   });
 
+  $('#pickTheme').addEventListener('click', async () => {
+    const f = await fileDialog({ multiple: false });
+    if (!f.length) return;
+    if (navigator.storage?.persist) { try { await navigator.storage.persist(); } catch (_) {} }
+    stopTheme();
+    await clipPut(THEME_KEY, f[0], f[0].name);
+    setTheme({ blob: f[0], filename: f[0].name });
+    showStorage();
+  });
+
+  $('#removeTheme').addEventListener('click', async () => {
+    if (!themeClip) return;
+    if (!confirm(`Remove the theme song "${themeClip.filename}"?`)) return;
+    stopTheme();
+    await tx('readwrite', s => s.delete(THEME_KEY));
+    setTheme(null);
+    showStorage();
+  });
+
   $('#clearClips').addEventListener('click', async () => {
     if (!Object.keys(clips).length) { alert('No loaded audio to remove.'); return; }
-    if (!confirm('Remove every audio file you loaded, on this device?\n\nAll pads go back to the placeholder tones. Your pad names and board layout are kept.')) return;
+    if (!confirm('Remove the audio you loaded onto the 22 pads?\n\nPads go back to the placeholder tones. Your pad names, board layout and theme song are kept.')) return;
     setBusy('Removing…');
-    await clipClear();
+    await clipClearPads();
     clips = {};
     for (let i = 0; i < sounds.length; i++) await decodeSlot(i);
     setBusy('');
@@ -716,6 +854,11 @@
   });
 
   async function showStorage() {
+    $('#themeInfo').textContent = themeClip
+      ? `Loaded: ${themeClip.filename}`
+      : 'No theme song loaded. The ♪ button stays dimmed until you add one.';
+    $('#removeTheme').classList.toggle('hidden', !themeClip);
+
     const n = Object.keys(clips).length;
     let txt = n ? `${n} of ${sounds.length} pads use your own audio.` : 'No audio loaded yet — all pads are placeholder tones.';
     if (navigator.storage?.estimate) {
@@ -732,8 +875,31 @@
   /* ================= review ================= */
 
   function renderReview() {
-    const { bySlot, files, unplaced, guessed } = pending;
+    const { bySlot, files, unplaced, guessed, themeFile } = pending;
     reviewList.innerHTML = '';
+
+    if (themeFile) {
+      const s = document.createElement('p');
+      s.className = 'sect';
+      s.textContent = 'Theme song';
+      const rv = document.createElement('div');
+      rv.className = 'rv';
+      const n  = document.createElement('span'); n.className = 'n'; n.textContent = '♪';
+      const pn = document.createElement('span'); pn.className = 'pad-name'; pn.textContent = 'THEME';
+      const ar = document.createElement('span'); ar.className = 'arrow'; ar.textContent = '←';
+      const fn = document.createElement('span'); fn.className = 'fname'; fn.textContent = themeFile.name;
+      rv.append(n, pn, ar, fn);
+      reviewList.append(s, rv);
+      const why = document.createElement('p');
+      why.className = 'hint';
+      why.style.padding = '6px 6px 2px';
+      why.textContent = 'Matched because "theme" is in the filename. It plays from the ♪ button, not a pad, and does not use up one of the 22.';
+      reviewList.appendChild(why);
+      const s2 = document.createElement('p');
+      s2.className = 'sect';
+      s2.textContent = 'Pads';
+      reviewList.appendChild(s2);
+    }
 
     const total = Object.keys(bySlot).length;
     const byName = total - guessed.size;
@@ -793,10 +959,15 @@
 
   $('#applyReview').addEventListener('click', async () => {
     if (!pending) return close(review);
-    const { bySlot, files } = pending;
+    const { bySlot, files, themeFile } = pending;
     const entries = Object.entries(bySlot);
     setBusy('Saving…');
     close(review);
+
+    if (themeFile) {
+      await clipPut(THEME_KEY, themeFile, themeFile.name);
+      setTheme({ blob: themeFile, filename: themeFile.name });
+    }
 
     let ok = 0; const bad = [];
     for (const [slotStr, k] of entries) {
@@ -871,7 +1042,11 @@
     renderBoard();
     makeCtx();
 
-    try { clips = await clipsLoad(); } catch (_) { clips = {}; }
+    try {
+      const stored = await clipsLoad();
+      clips = stored.pads;
+      setTheme(stored.theme);
+    } catch (_) { clips = {}; setTheme(null); }
 
     // Decode everything up front so a tap is pure playback — no fetch, no decode, no lag.
     let done = 0;

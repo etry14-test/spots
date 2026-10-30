@@ -46,6 +46,30 @@ be stolen by a weaker one. Leftover files fill pads you haven't renamed —
 never ones you have, since a custom name means you claimed that pad. Surplus
 files are listed rather than silently dropped.
 
+### The theme song
+
+A once-per-game track, separate from the 22 pads. It plays from the **♪** button
+in the middle of the bottom edge — tap to start from the beginning, tap again to
+stop. A hairline progress bar runs along the bottom while it plays, and it
+registers with the OS media session so the lock-screen controls work.
+
+**Put it in the zip with everything else.** Any file with `theme` as a whole word
+in its name (`Oswald-theme.mp3`, `Theme Song.mp3`) is routed to the theme and
+excluded from pad matching, so it doesn't consume one of your 22. It has to be a
+whole word — `themepark.mp3` and `themes.mp3` are treated as ordinary pad audio.
+
+Or set it on its own: **⚙ → Load… → Pick the theme song**.
+
+Unlike the pads, the theme is **streamed from an `<audio>` element** rather than
+decoded into an AudioBuffer. Pads are pre-decoded for zero-latency triggering,
+which costs memory proportional to length — fine for short clips, ruinous for a
+multi-minute song (a 3-minute track is roughly 30 MB of float PCM per channel).
+Latency doesn't matter for a theme, so streaming is the right trade.
+
+The **⏹** button stops the theme as well as any ringing pads.
+**Remove audio loaded onto pads** leaves the theme alone; the theme has its own
+remove button.
+
 Per-pad: the **📁** button on any settings row loads a single file.
 **⚙ → Load… → Remove all loaded audio** reverts everything to the placeholders.
 
